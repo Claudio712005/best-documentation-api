@@ -12,13 +12,17 @@ import org.springframework.http.HttpStatus;
  *
  * <p>Each constant resolves two message keys, {@code problem.<code>.title} and
  * {@code problem.<code>.detail}, from the runtime bundle, so every error is localized.
+ *
+ * <p>{@code enumAsRef = true} is what makes this appear in {@code components.schemas} instead of
+ * being inlined at each use site. Inlined, the value list is repeated in every schema that
+ * references it, this description is dropped, and client generators emit one anonymous enum per
+ * occurrence rather than a single shared type.
  */
 @Schema(
         name = "ApiErrorCode",
-        description = """
-                Stable, machine-readable identifier of the failure. Clients should branch on this \
-                value rather than on the HTTP status, which is intentionally coarse.""",
-        example = "VALIDATION_FAILED")
+        description = "doc.schema.ApiErrorCode.description",
+        examples = "VALIDATION_FAILED",
+        enumAsRef = true)
 public enum ApiErrorCode {
 
     /** Request body or parameters violated a declared constraint. */

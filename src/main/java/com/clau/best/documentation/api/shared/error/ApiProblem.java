@@ -17,81 +17,67 @@ import java.util.List;
  *
  * <p>One schema for every failure, in every endpoint: documenting a different error shape per route
  * is the single most common way an OpenAPI document rots.
+ *
+ * <p>Descriptions are message keys, like every other schema in this API — an error payload that
+ * honours {@code Accept-Language} at runtime but documents itself only in English would be an odd
+ * thing to ship.
  */
-@Schema(
-        name = "Problem",
-        description = """
-                Error payload following RFC 9457 (Problem Details for HTTP APIs). Served with the \
-                `application/problem+json` media type by every failing operation in this API.""")
+@Schema(name = "Problem", description = "doc.schema.Problem.description")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiProblem(
 
         @Schema(
-                description = """
-                        URI identifying the problem type. Dereferences to documentation describing \
-                        the failure and how to recover from it.""",
-                example = "https://docs.best-documentation-api.dev/problems/validation-failed",
+                description = "doc.schema.Problem.type",
                 format = "uri",
+                examples = "https://docs.best-documentation-api.dev/problems/validation-failed",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         URI type,
 
         @Schema(
-                description = """
-                        Short, human-readable summary of the problem type, localized through \
-                        `Accept-Language`. Stable for a given `type` — never interpolated with \
-                        request data, so it stays safe to use as a log key.""",
-                example = "Validation failed",
+                description = "doc.schema.Problem.title",
+                examples = "Validation failed",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String title,
 
         @Schema(
-                description = "HTTP status code, repeated here so the payload is self-contained.",
-                example = "422",
+                description = "doc.schema.Problem.status",
+                examples = "422",
                 minimum = "400",
                 maximum = "599",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         int status,
 
         @Schema(
-                description = """
-                        Explanation specific to this occurrence, localized. May interpolate request \
-                        data, so it must not be parsed by clients.""",
-                example = "The request body failed 2 constraints.",
+                description = "doc.schema.Problem.detail",
+                examples = "The request body failed 2 constraint(s). See \"violations\" for the exact locations.",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String detail,
 
         @Schema(
-                description = "URI reference identifying the specific occurrence — the request path.",
-                example = "/v1/orders",
+                description = "doc.schema.Problem.instance",
                 format = "uri-reference",
+                examples = "/v1/orders",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         URI instance,
 
         @Schema(
-                description = """
-                        RFC 9457 extension. Machine-readable error code — the value clients should \
-                        branch on.""",
+                description = "doc.schema.Problem.code",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         ApiErrorCode code,
 
         @Schema(
-                description = """
-                        RFC 9457 extension. Correlation identifier, echoed from the request's \
-                        `X-Request-Id` or generated. Quote it in support tickets.""",
-                example = "01JC8Z5W9QK3MV2T7X4YB6NDHA",
+                description = "doc.schema.Problem.traceId",
+                examples = "01JC8Z5W9QK3MV2T7X4YB6NDHA",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String traceId,
 
         @Schema(
-                description = "RFC 9457 extension. Server time at which the failure was observed.",
-                example = "2026-10-30T20:14:05.182-03:00",
+                description = "doc.schema.Problem.timestamp",
                 format = "date-time",
+                examples = "2026-10-30T20:14:05.182-03:00",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         OffsetDateTime timestamp,
 
-        @Schema(
-                description = """
-                        RFC 9457 extension. Present only for `VALIDATION_FAILED`, listing every \
-                        constraint that failed rather than just the first one.""")
+        @Schema(description = "doc.schema.Problem.violations")
         List<FieldViolation> violations) {
 }

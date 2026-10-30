@@ -10,35 +10,29 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * client can map the violation back onto the exact node it sent — including array indices — without
  * parsing a bespoke format.
  */
-@Schema(
-        name = "FieldViolation",
-        description = "A single constraint violation, located by JSON Pointer within the request.")
+@Schema(name = "FieldViolation", description = "doc.schema.FieldViolation.description")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record FieldViolation(
 
         @Schema(
-                description = "JSON Pointer (RFC 6901) to the offending node in the request body.",
-                example = "/items/0/quantity",
+                description = "doc.schema.FieldViolation.pointer",
+                examples = "/items/0/quantity",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String pointer,
 
         @Schema(
-                description = "Identifier of the violated constraint, stable across languages.",
-                example = "Min",
+                description = "doc.schema.FieldViolation.constraint",
+                examples = {"Min", "NotBlank", "Pattern"},
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String constraint,
 
         @Schema(
-                description = "Localized explanation, honouring the request's `Accept-Language`.",
-                example = "must be greater than or equal to 1",
+                description = "doc.schema.FieldViolation.message",
+                examples = "must be greater than or equal to 1",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         String message,
 
-        @Schema(
-                description = """
-                        The value that was rejected, echoed back for debugging. Omitted when the \
-                        value is absent or carries sensitive data.""",
-                example = "0")
+        @Schema(description = "doc.schema.FieldViolation.rejectedValue", examples = "0")
         Object rejectedValue) {
 
     public static FieldViolation of(String pointer, String constraint, String message) {

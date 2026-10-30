@@ -117,6 +117,25 @@ class OpenApiContractTest {
         assertThat(declared).noneMatch(tag -> tag.endsWith("-controller"));
     }
 
+    @Test
+    @DisplayName("publishes enums as referenced components rather than inlining them")
+    void publishesEnumsAsComponents() {
+        JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
+        JsonNode schemas = document.path("components").path("schemas");
+
+        // Without @Schema(enumAsRef = true) swagger inlines enums, duplicating the value list at
+        // every use site and silently discarding the enum's own description.
+        assertThat(schemas.propertyNames()).contains("ApiErrorCode", "HealthStatus");
+        assertThat(schemas.path("ApiErrorCode").path("description").asString()).isNotBlank();
+
+        JsonNode code = schemas.path("Problem").path("properties").path("code");
+        assertThat(code.path("$ref").asString()).isEqualTo("#/components/schemas/ApiErrorCode");
+        // A $ref carrying a sibling description is legal only in OpenAPI 3.1, and is what lets the
+        // shared enum keep a use-site-specific explanation.
+        assertThat(code.path("description").asString()).isNotBlank();
+        assertThat(code.path("enum").isMissingNode()).isTrue();
+    }
+
     private static String tagDescription(JsonNode document, String tagName) {
         for (JsonNode tag : document.path("tags")) {
             if (tagName.equals(tag.path("name").asString())) {

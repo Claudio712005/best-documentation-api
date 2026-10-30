@@ -22,7 +22,17 @@ public record HealthResponse(
         @Schema(description = "doc.schema.Health.checkedAt", format = "date-time")
         OffsetDateTime checkedAt) {
 
-    @Schema(name = "HealthStatus", description = "doc.schema.HealthStatus.description")
+    /**
+     * {@code enumAsRef} publishes this enum as its own component schema.
+     *
+     * <p>Without it swagger inlines the enum into every property that uses it: the value list is
+     * duplicated at each use site, the enum's own description is discarded, and generated clients
+     * produce a separate anonymous type per occurrence instead of one shared one.
+     */
+    @Schema(
+            name = "HealthStatus",
+            description = "doc.schema.HealthStatus.description",
+            enumAsRef = true)
     public enum Status {
         UP,
         DEGRADED

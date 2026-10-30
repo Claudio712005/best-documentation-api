@@ -15,8 +15,9 @@ import java.util.Optional;
  */
 @Schema(
         name = "SupportedLanguage",
-        description = "Language tag accepted by the `Accept-Language` header, in BCP 47 form.",
-        example = "pt-BR")
+        description = "doc.schema.SupportedLanguage.description",
+        examples = "pt-BR",
+        enumAsRef = true)
 public enum SupportedLanguage {
 
     /** English (United States) — the fallback language of the API. */
