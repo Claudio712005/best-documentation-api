@@ -7,10 +7,13 @@ spring:
     # which members are required; emitting "field": null for every optional one makes payloads
     # noisier without making them more informative.
     default-property-inclusion: non_null
-    serialization:
-      # ISO-8601 strings, not epoch numbers: the document advertises format: date-time, and the
-      # payload has to agree with it.
-      write-dates-as-timestamps: false
+    datatype:
+      datetime:
+        # ISO-8601 strings, not epoch numbers: the document advertises format: date-time, and the
+        # payload has to agree with it. Spring Boot 4 ships Jackson 3, which moved this out of
+        # SerializationFeature into DateTimeFeature — the old spring.jackson.serialization key
+        # fails the context startup rather than being ignored.
+        write-dates-as-timestamps: false
     deserialization:
       # Unknown members are rejected instead of ignored, so a client misspelling a field learns
       # about it at the first call rather than wondering why the value had no effect.
@@ -56,9 +59,15 @@ springdoc:
     # OpenAPI 3.1 is already the default in springdoc 3.x. Pinned explicitly so an upgrade can
     # never silently change the dialect of the published document.
     version: openapi-3-1
-    # Allows ${key} placeholders inside @Schema and @Operation attributes to be resolved, which
-    # is what makes a translated document possible without duplicating annotations per language.
-    resolve-schema-properties: true
+    # Deliberately OFF. springdoc's built-in schema resolver (SpringDocConfiguration
+    # #propertiesResolverForSchema) calls resolveProperties(schema, Locale.getDefault()) — the JVM
+    # default locale, not the request locale — so with it enabled every schema description would be
+    # frozen in whatever language the server booted with. SchemaLocalizationCustomizer does the
+    # same job against the negotiated locale instead.
+    #
+    # Operations, tags, parameters and responses are unaffected: those paths already receive the
+    # request locale, so their message keys resolve natively.
+    resolve-schema-properties: false
     resolve-extensions-properties: true
 
   # Languages the document itself is served in, negotiated by Accept-Language on /v3/api-docs.
@@ -79,6 +88,29 @@ springdoc:
   # "order-controller" leak internal structure into the public contract.
   auto-tag-classes: false
   default-produces-media-type: application/json
+
+  # Annotation values are looked up as MessageSource keys before anything else, so i18n of the
+  # document is on. Left explicit because switching it off silently changes every summary into a
+  # literal key.
+  disable-i18n: false
+
+  model-converters:
+    polymorphic-converter:
+      # Both flags are stated explicitly on purpose: the configuration metadata reports a default
+      # of false, but SpringDocConfiguration#polymorphicModelConverter is registered with
+      # @ConditionalOnProperty(matchIfMissing = true), so omitting the property enables it. Never
+      # rely on the documented default here.
+      #
+      # What it actually produces is a <Parent>Variant component holding oneOf of the subtypes
+      # while leaving the parent registered and referenced by each child's allOf. Collapsing that
+      # into children-only schemas is the job of PolymorphicSchemaCustomizer.
+      enabled: true
+      one-of-as-ref: true
+      one-of-ref-suffix: Variant
+    java-nullable-property-customizer:
+      # Honours JSpecify @Nullable (shipped with Spring Boot 4) on fields, getters and constructor
+      # parameters, emitting the 3.1 type union instead of the removed 3.0 "nullable" keyword.
+      enabled: true
 
   swagger-ui:
     enabled: true
