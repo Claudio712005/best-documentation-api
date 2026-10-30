@@ -1,0 +1,155 @@
+package com.clau.best.documentation.api;
+
+import com.clau.best.documentation.api.config.OpenApiConfig;
+import com.clau.best.documentation.api.support.OpenApiDocumentFixture;
+import tools.jackson.databind.JsonNode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Asserts the properties of the published document that a reviewer cannot eyeball.
+ *
+ * <p>An OpenAPI document generated from annotations is only trustworthy if something verifies it.
+ * These tests are deliberately about the document rather than the endpoints: an endpoint that works
+ * while its description is a leaked message key is still a broken deliverable.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class OpenApiContractTest {
+
+    private static final String MESSAGE_KEY_PREFIX = "doc.";
+
+    @LocalServerPort
+    private int port;
+
+    @Test
+    @DisplayName("is emitted as OpenAPI 3.1 and declares the JSON Schema dialect")
+    void declaresVersionAndDialect() {
+        JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
+
+        assertThat(document.path("openapi").asString()).isEqualTo("3.1.0");
+        // springdoc sets the version and spec version but never emits the dialect, so this asserts
+        // the OpenApiConfig bean rather than the library.
+        assertThat(document.path("jsonSchemaDialect").asString())
+                .isEqualTo(OpenApiConfig.JSON_SCHEMA_DIALECT);
+    }
+
+    @ParameterizedTest(name = "no message key leaks into the {0} document")
+    @ValueSource(strings = {"en-US", "pt-BR", "es-ES"})
+    @DisplayName("resolves every message key in every supported language")
+    void leaksNoMessageKeys(String languageTag) {
+        JsonNode document = OpenApiDocumentFixture.fetch(port, languageTag);
+
+        List<String> unresolved =
+                OpenApiDocumentFixture.unresolvedMessageKeys(document, MESSAGE_KEY_PREFIX);
+
+        assertThat(unresolved)
+                .withFailMessage(
+                        "The %s document still carries unresolved message keys, which means these "
+                                + "keys are missing from the bundle:%n  %s",
+                        languageTag, String.join("%n  ".formatted(), unresolved))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("translates document metadata, tags and operations per Accept-Language")
+    void translatesDocumentPerLanguage() {
+        JsonNode english = OpenApiDocumentFixture.fetch(port, "en-US");
+        JsonNode portuguese = OpenApiDocumentFixture.fetch(port, "pt-BR");
+        JsonNode spanish = OpenApiDocumentFixture.fetch(port, "es-ES");
+
+        assertThat(List.of(
+                english.path("info").path("summary").asString(),
+                portuguese.path("info").path("summary").asString(),
+                spanish.path("info").path("summary").asString()))
+                .doesNotHaveDuplicates();
+
+        assertThat(tagDescription(english, OpenApiConfig.TAG_SYSTEM))
+                .isNotEqualTo(tagDescription(portuguese, OpenApiConfig.TAG_SYSTEM));
+
+        assertThat(healthOperation(english).path("summary").asString())
+                .isNotEqualTo(healthOperation(portuguese).path("summary").asString());
+    }
+
+    @Test
+    @DisplayName("translates component schema descriptions, which springdoc alone does not")
+    void translatesSchemaDescriptions() {
+        // The built-in resolver behind springdoc.api-docs.resolve-schema-properties uses
+        // Locale.getDefault(), so this is the assertion that DocumentLocalizationCustomizer exists
+        // for. If it regresses, schema prose silently freezes in the server's boot language.
+        String english = schemaDescription(OpenApiDocumentFixture.fetch(port, "en-US"), "Health");
+        String portuguese = schemaDescription(OpenApiDocumentFixture.fetch(port, "pt-BR"), "Health");
+
+        assertThat(english).isNotBlank().isNotEqualTo(portuguese);
+        assertThat(portuguese).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("applies documentation meta-annotations to every operation")
+    void appliesMetaAnnotations() {
+        JsonNode operation = healthOperation(OpenApiDocumentFixture.fetch(port, "en-US"));
+
+        assertThat(operation.path("operationId").asString()).isEqualTo("getHealth");
+
+        List<String> parameterNames = operation.path("parameters").findValuesAsString("name");
+        assertThat(parameterNames).contains("Accept-Language", "X-Request-Id");
+
+        // Declared once on @StandardErrorResponses rather than on each operation.
+        assertThat(operation.path("responses").propertyNames())
+                .contains("200", "400", "406", "422", "500");
+    }
+
+    @Test
+    @DisplayName("declares every tag explicitly instead of deriving them from class names")
+    void declaresTagsExplicitly() {
+        JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
+
+        List<String> declared = document.path("tags").findValuesAsString("name");
+
+        assertThat(declared).isEqualTo(OpenApiConfig.TAG_ORDER);
+        assertThat(declared).noneMatch(tag -> tag.endsWith("-controller"));
+    }
+
+    @Test
+    @DisplayName("publishes enums as referenced components rather than inlining them")
+    void publishesEnumsAsComponents() {
+        JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
+        JsonNode schemas = document.path("components").path("schemas");
+
+        // Without @Schema(enumAsRef = true) swagger inlines enums, duplicating the value list at
+        // every use site and silently discarding the enum's own description.
+        assertThat(schemas.propertyNames()).contains("ApiErrorCode", "HealthStatus");
+        assertThat(schemas.path("ApiErrorCode").path("description").asString()).isNotBlank();
+
+        JsonNode code = schemas.path("Problem").path("properties").path("code");
+        assertThat(code.path("$ref").asString()).isEqualTo("#/components/schemas/ApiErrorCode");
+        // A $ref carrying a sibling description is legal only in OpenAPI 3.1, and is what lets the
+        // shared enum keep a use-site-specific explanation.
+        assertThat(code.path("description").asString()).isNotBlank();
+        assertThat(code.path("enum").isMissingNode()).isTrue();
+    }
+
+    private static String tagDescription(JsonNode document, String tagName) {
+        for (JsonNode tag : document.path("tags")) {
+            if (tagName.equals(tag.path("name").asString())) {
+                return tag.path("description").asString();
+            }
+        }
+        throw new AssertionError("Tag not declared in the document: " + tagName);
+    }
+
+    private static String schemaDescription(JsonNode document, String schemaName) {
+        return document.path("components").path("schemas").path(schemaName).path("description").asString();
+    }
+
+    private static JsonNode healthOperation(JsonNode document) {
+        return document.path("paths").path("/v1/health").path("get");
+    }
+}
