@@ -14,13 +14,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Asserts the properties of the published document that a reviewer cannot eyeball.
- *
- * <p>An OpenAPI document generated from annotations is only trustworthy if something verifies it.
- * These tests are deliberately about the document rather than the endpoints: an endpoint that works
- * while its description is a leaked message key is still a broken deliverable.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OpenApiContractTest {
 
@@ -35,8 +28,7 @@ class OpenApiContractTest {
         JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
 
         assertThat(document.path("openapi").asString()).isEqualTo("3.1.0");
-        // springdoc sets the version and spec version but never emits the dialect, so this asserts
-        // the OpenApiConfig bean rather than the library.
+
         assertThat(document.path("jsonSchemaDialect").asString())
                 .isEqualTo(OpenApiConfig.JSON_SCHEMA_DIALECT);
     }
@@ -81,9 +73,7 @@ class OpenApiContractTest {
     @Test
     @DisplayName("translates component schema descriptions, which springdoc alone does not")
     void translatesSchemaDescriptions() {
-        // The built-in resolver behind springdoc.api-docs.resolve-schema-properties uses
-        // Locale.getDefault(), so this is the assertion that DocumentLocalizationCustomizer exists
-        // for. If it regresses, schema prose silently freezes in the server's boot language.
+
         String english = schemaDescription(OpenApiDocumentFixture.fetch(port, "en-US"), "Health");
         String portuguese = schemaDescription(OpenApiDocumentFixture.fetch(port, "pt-BR"), "Health");
 
@@ -101,7 +91,6 @@ class OpenApiContractTest {
         List<String> parameterNames = operation.path("parameters").findValuesAsString("name");
         assertThat(parameterNames).contains("Accept-Language", "X-Request-Id");
 
-        // Declared once on @StandardErrorResponses rather than on each operation.
         assertThat(operation.path("responses").propertyNames())
                 .contains("200", "400", "406", "422", "500");
     }
@@ -123,15 +112,12 @@ class OpenApiContractTest {
         JsonNode document = OpenApiDocumentFixture.fetch(port, "en-US");
         JsonNode schemas = document.path("components").path("schemas");
 
-        // Without @Schema(enumAsRef = true) swagger inlines enums, duplicating the value list at
-        // every use site and silently discarding the enum's own description.
         assertThat(schemas.propertyNames()).contains("ApiErrorCode", "HealthStatus");
         assertThat(schemas.path("ApiErrorCode").path("description").asString()).isNotBlank();
 
         JsonNode code = schemas.path("Problem").path("properties").path("code");
         assertThat(code.path("$ref").asString()).isEqualTo("#/components/schemas/ApiErrorCode");
-        // A $ref carrying a sibling description is legal only in OpenAPI 3.1, and is what lets the
-        // shared enum keep a use-site-specific explanation.
+
         assertThat(code.path("description").asString()).isNotBlank();
         assertThat(code.path("enum").isMissingNode()).isTrue();
     }

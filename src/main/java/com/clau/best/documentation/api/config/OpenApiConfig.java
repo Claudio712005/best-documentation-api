@@ -12,21 +12,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-/**
- * Builds the document-level structure of the OpenAPI definition.
- *
- * <p>Only structure lives here. Every piece of prose is a message key, resolved per request by
- * {@code DocumentLocalizationCustomizer}, because this bean is a singleton: text written into it
- * directly would be fixed at startup in one language.
- *
- * <p>Tags are declared explicitly and exhaustively, with {@code springdoc.auto-tag-classes=false}.
- * Letting springdoc derive them from class names publishes {@code order-controller} as a public
- * grouping, which leaks internal structure and cannot be translated.
- */
 @Configuration(proxyBeanMethods = false)
 public class OpenApiConfig {
 
-    /** JSON Schema dialect of OpenAPI 3.1. springdoc does not emit it on its own. */
     public static final String JSON_SCHEMA_DIALECT = "https://spec.openapis.org/oas/3.1/dialect/base";
 
     public static final String TAG_SYSTEM = "system";
@@ -35,7 +23,6 @@ public class OpenApiConfig {
     public static final String TAG_PAYMENT_INSTRUMENTS = "payment-instruments";
     public static final String TAG_ORDERS = "orders";
 
-    /** Declaration order of the tags, which is the order the documentation UI renders them in. */
     public static final List<String> TAG_ORDER = List.of(
             TAG_SYSTEM, TAG_CATALOG, TAG_CARTS, TAG_PAYMENT_INSTRUMENTS, TAG_ORDERS);
 
@@ -64,12 +51,6 @@ public class OpenApiConfig {
                         .url(api.license().url().toString()));
     }
 
-    /**
-     * Declared servers, in the order clients should prefer them.
-     *
-     * <p>Taken from configuration rather than a {@code @Server} annotation so that each deployment
-     * publishes a document naming the environment it is actually running in.
-     */
     private List<Server> servers(ApiProperties api) {
         return api.servers().stream()
                 .map(server -> new Server().url(server.url()).description(server.description()))

@@ -8,12 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A wallet provider account.
- *
- * <p>Carries a provider-issued token rather than any underlying instrument detail, which is why the
- * two differ in visibility: the account reference is safe to echo back, the device token is not.
- */
 @Schema(name = "WalletInstrument", description = "doc.schema.WalletInstrument.description")
 public final class WalletInstrument extends PaymentInstrument {
 

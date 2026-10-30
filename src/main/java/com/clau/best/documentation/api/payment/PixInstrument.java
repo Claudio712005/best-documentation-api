@@ -8,17 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A Pix key.
- *
- * <p>Two members only, against the card's six — the narrowest variant, included so the union spans
- * a real range of payload sizes rather than four near-identical shapes.
- *
- * <p>The format of {@code key} depends on {@code keyType}, a constraint no JSON Schema keyword
- * expresses cleanly. It is therefore stated in the description and enforced in the service, which
- * is the honest way to handle a dependent constraint: document it where a reader will see it rather
- * than imply a validation the document cannot carry.
- */
 @Schema(name = "PixInstrument", description = "doc.schema.PixInstrument.description")
 public final class PixInstrument extends PaymentInstrument {
 

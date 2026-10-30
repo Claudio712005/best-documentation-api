@@ -28,18 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Translates every exception into a localized {@link ApiProblem}.
- *
- * <p>Two rules drive the design:
- *
- * <ul>
- *   <li><b>One response shape, always.</b> Every handler below returns the same schema, so the
- *       OpenAPI document declares {@code Problem} once and reuses it by reference everywhere.
- *   <li><b>All violations, not the first.</b> A client fixing a form wants every field that failed
- *       in one round trip.
- * </ul>
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -53,7 +41,6 @@ public class GlobalExceptionHandler {
         this.messageSource = messageSource;
     }
 
-    /** Failures the domain raises on purpose, already carrying a code and its message arguments. */
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiProblem> handleApiException(
             ApiException exception, HttpServletRequest request) {
@@ -61,7 +48,6 @@ public class GlobalExceptionHandler {
         return respond(problems.create(exception.code(), request, exception.detailArgs()));
     }
 
-    /** Bean validation on an {@code @RequestBody}. Reports every field that failed. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiProblem> handleBodyValidation(
             MethodArgumentNotValidException exception, HttpServletRequest request) {
@@ -84,7 +70,6 @@ public class GlobalExceptionHandler {
                 ApiErrorCode.VALIDATION_FAILED, request, violations, violations.size()));
     }
 
-    /** Bean validation on path variables, query parameters and headers. */
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ApiProblem> handleParameterValidation(
             HandlerMethodValidationException exception, HttpServletRequest request) {
@@ -103,7 +88,6 @@ public class GlobalExceptionHandler {
                 ApiErrorCode.VALIDATION_FAILED, request, violations, violations.size()));
     }
 
-    /** Body that Jackson could not even read: broken JSON, wrong type, unknown enum value. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiProblem> handleUnreadableBody(
             HttpMessageNotReadableException exception, HttpServletRequest request) {
@@ -112,13 +96,6 @@ public class GlobalExceptionHandler {
         return respond(problems.create(ApiErrorCode.MALFORMED_REQUEST, request));
     }
 
-    /**
-     * A required request value was absent, or present with a value of the wrong type.
-     *
-     * <p>Catching the {@link MissingRequestValueException} base type covers query parameters,
-     * headers, cookies, path and matrix variables in one handler; only the accessor exposing the
-     * offending name differs between them.
-     */
     @ExceptionHandler({MissingRequestValueException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ApiProblem> handleBadRequestValue(
             Exception exception, HttpServletRequest request) {
@@ -135,7 +112,6 @@ public class GlobalExceptionHandler {
         return respond(problems.create(ApiErrorCode.INVALID_PARAMETER, request, name));
     }
 
-    /** No route matched. Answered with the same schema as a domain-level 404, never an HTML page. */
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiProblem> handleNoRoute(
             NoResourceFoundException exception, HttpServletRequest request) {
@@ -144,10 +120,6 @@ public class GlobalExceptionHandler {
                 ApiErrorCode.RESOURCE_NOT_FOUND, request, "endpoint", exception.getResourcePath()));
     }
 
-    /**
-     * Last resort. Logs the full stack trace server-side and returns only the trace identifier, so
-     * an internal failure never leaks class names or SQL to the caller.
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiProblem> handleUnexpected(
             Exception exception, HttpServletRequest request) {
@@ -163,10 +135,6 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
-    /**
-     * Converts a Spring property path into a JSON Pointer: {@code items[0].quantity} becomes
-     * {@code /items/0/quantity}.
-     */
     private static String jsonPointer(String propertyPath) {
         if (propertyPath == null || propertyPath.isBlank()) {
             return "";
@@ -178,7 +146,6 @@ public class GlobalExceptionHandler {
         return "/" + String.join("/", normalized.split("\\."));
     }
 
-    /** Bare constraint name from a resolvable's code list, e.g. {@code Min} out of {@code Min.age}. */
     private static String constraintOf(MessageSourceResolvable error) {
         String[] codes = error.getCodes();
         if (codes == null || codes.length == 0) {

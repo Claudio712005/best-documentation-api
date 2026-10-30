@@ -13,13 +13,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * End-to-end behaviour of the polymorphic resource.
- *
- * <p>Pairs with {@code DiscriminatedUnionContractTest}: that one asserts what the document claims,
- * this one asserts the service actually behaves that way. A document is only worth publishing if
- * both hold, and the two drift apart far more easily than either fails on its own.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class PaymentInstrumentApiTest {
 
@@ -54,7 +47,7 @@ class PaymentInstrumentApiTest {
 
         assertThat(response.status()).isEqualTo(201);
         assertThat(response.header("Location")).contains(PATH + "/");
-        // Written by the interceptor, not the handler, so only a real request exercises it.
+
         assertThat(response.header("Content-Language")).isEqualTo("pt-BR");
 
         JsonNode body = response.json();
@@ -71,12 +64,9 @@ class PaymentInstrumentApiTest {
         String location = api.post(PATH, "en-US", CARD).header("Location");
         JsonNode instrument = api.get(path(location), "en-US").json().path("instrument");
 
-        // @Schema(writeOnly = true) alone would document this and still serialize the value;
-        // the enforcement comes from @JsonProperty(access = WRITE_ONLY).
         assertThat(instrument.path("number").isMissingNode()).isTrue();
         assertThat(instrument.path("securityCode").isMissingNode()).isTrue();
-        // The discriminator, by contrast, must round-trip: a client has to be able to read back
-        // which variant it sent.
+
         assertThat(instrument.path("type").asString()).isEqualTo("CARD");
         assertThat(instrument.path("expiryMonth").asInt()).isEqualTo(9);
     }
@@ -165,7 +155,6 @@ class PaymentInstrumentApiTest {
         assertThat(response.json().path("code").asString()).isEqualTo("MALFORMED_REQUEST");
     }
 
-    /** Strips the scheme and authority from a Location header, leaving the request path. */
     private static String path(String location) {
         return location.substring(location.indexOf(PATH));
     }

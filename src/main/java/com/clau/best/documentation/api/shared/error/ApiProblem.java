@@ -7,21 +7,6 @@ import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * Error payload, shaped by RFC 9457 (Problem Details for HTTP APIs).
- *
- * <p>Served as {@code application/problem+json}. The five RFC members are kept verbatim so generic
- * tooling understands the payload; everything this API adds ({@code code}, {@code traceId},
- * {@code timestamp}, {@code violations}) is an RFC extension member, which the spec explicitly
- * allows and which clients may ignore.
- *
- * <p>One schema for every failure, in every endpoint: documenting a different error shape per route
- * is the single most common way an OpenAPI document rots.
- *
- * <p>Descriptions are message keys, like every other schema in this API — an error payload that
- * honours {@code Accept-Language} at runtime but documents itself only in English would be an odd
- * thing to ship.
- */
 @Schema(name = "Problem", description = "doc.schema.Problem.description")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiProblem(

@@ -13,13 +13,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Single place where an {@link ApiProblem} is built.
- *
- * <p>Localization happens here and nowhere else: exceptions carry a code and interpolation
- * arguments, and only this factory knows the caller's {@link Locale}. That split is what keeps the
- * service layer free of presentation concerns while still answering in the caller's language.
- */
 @Component
 public class ProblemFactory {
 
@@ -56,23 +49,10 @@ public class ProblemFactory {
                 violations == null || violations.isEmpty() ? null : violations);
     }
 
-    /**
-     * Resolves a localized message, falling back to the key itself.
-     *
-     * <p>Returning the key rather than throwing is deliberate: a missing translation should degrade
-     * one string, not turn a {@code 404} into a {@code 500}.
-     */
     private String message(String key, Locale locale, Object... args) {
         return messageSource.getMessage(key, args, key, locale);
     }
 
-    /**
-     * Correlation identifier for this request: the caller's own if supplied, otherwise a fresh one.
-     *
-     * <p>Memoized on the request so that logging the identifier and returning it to the client
-     * cannot drift apart — generating it twice would hand the caller a value absent from the logs,
-     * which defeats the entire point of the header.
-     */
     public String traceId(HttpServletRequest request) {
         Object cached = request.getAttribute(TRACE_ID_ATTRIBUTE);
         if (cached instanceof String traceId) {

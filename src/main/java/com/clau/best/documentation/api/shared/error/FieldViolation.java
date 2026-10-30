@@ -3,13 +3,6 @@ package com.clau.best.documentation.api.shared.error;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * One failed constraint, addressed by its location in the request.
- *
- * <p>The {@code pointer} is a JSON Pointer (RFC 6901) rather than a dotted property path, so a
- * client can map the violation back onto the exact node it sent — including array indices — without
- * parsing a bespoke format.
- */
 @Schema(name = "FieldViolation", description = "doc.schema.FieldViolation.description")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record FieldViolation(

@@ -11,12 +11,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Asserts the shape of the published payment instrument union.
- *
- * <p>Every assertion here corresponds to something springdoc gets wrong on its own, so this class
- * is really a specification of what {@code DiscriminatedUnionCustomizer} must keep doing.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class DiscriminatedUnionContractTest {
 
@@ -34,9 +28,9 @@ class DiscriminatedUnionContractTest {
         JsonNode schemas = schemas();
 
         assertThat(schemas.propertyNames()).containsAll(VARIANTS);
-        // The base type is an implementation detail: no operation accepts or returns it.
+
         assertThat(schemas.propertyNames()).doesNotContain("PaymentInstrument");
-        // springdoc's polymorphic converter emits this wrapper; the union replaces it inline.
+
         assertThat(schemas.propertyNames()).doesNotContain("PaymentInstrumentVariant");
     }
 
@@ -61,8 +55,6 @@ class DiscriminatedUnionContractTest {
                     .contains("holderName", "label", "type");
         }
 
-        // preferred is @Nullable on the base; the variant's own nullable form must survive the
-        // merge rather than being overwritten by the base's non-null one.
         assertThat(schemas.path("CardInstrument").path("properties").path("preferred")
                 .path("type").toString())
                 .contains("null");
@@ -83,8 +75,6 @@ class DiscriminatedUnionContractTest {
         assertThat(members).containsExactlyInAnyOrderElementsOf(
                 VARIANTS.stream().map(name -> REF + name).toList());
 
-        // Without the mapping a client knows the possible shapes but not how to tell them apart,
-        // and has to fall back to trial deserialization.
         JsonNode discriminator = schema.path("discriminator");
         assertThat(discriminator.path("propertyName").asString()).isEqualTo("type");
         for (PaymentInstrumentType type : PaymentInstrumentType.values()) {
@@ -102,7 +92,7 @@ class DiscriminatedUnionContractTest {
 
         assertThat(nested.path("oneOf").size()).isEqualTo(VARIANTS.size());
         assertThat(nested.path("discriminator").path("propertyName").asString()).isEqualTo("type");
-        // A sibling description next to a union is legal in 3.1 and must not be lost by the rewrite.
+
         assertThat(nested.path("description").asString()).isNotBlank();
     }
 

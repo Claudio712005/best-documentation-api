@@ -22,14 +22,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Liveness and contract discovery.
- *
- * <p>Both operations are intentionally trivial. Their purpose is to establish the documentation
- * conventions the rest of the API follows — explicit {@code operationId}, message keys instead of
- * literal prose, the shared error responses pulled in by meta-annotation — somewhere the payload
- * shape cannot distract from them.
- */
 @RestController
 @RequestMapping(path = "/v1", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = OpenApiConfig.TAG_SYSTEM)
@@ -44,11 +36,6 @@ public class SystemController {
         this.api = api;
     }
 
-    /**
-     * Note the explicit {@code operationId}: it is the name generated clients give the method, so
-     * leaving springdoc to derive it from the Java method means renaming a private method silently
-     * breaks every generated SDK.
-     */
     @GetMapping("/health")
     @Operation(
             operationId = "getHealth",
@@ -64,13 +51,6 @@ public class SystemController {
         return new HealthResponse(HealthResponse.Status.UP, api.version(), OffsetDateTime.now());
     }
 
-    /**
-     * Returns the languages this API serves, with the negotiated fallback flagged.
-     *
-     * <p>Documented with {@link ArraySchema} rather than a bare {@code List}: without it the
-     * document describes an untyped array, which is the difference between a client generating a
-     * typed collection and generating {@code Object[]}.
-     */
     @GetMapping("/languages")
     @Operation(
             operationId = "listSupportedLanguages",

@@ -5,17 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/**
- * A stored payment instrument.
- *
- * <p>Composition rather than inheritance: the server-assigned members sit in this wrapper and the
- * client-supplied ones stay in the nested union. The alternative — adding {@code id} and
- * {@code registeredAt} to the hierarchy — would force every request variant to document two members
- * a client must never send.
- *
- * <p>It also puts the union at a second use site, which is the honest cost of inlining it: the
- * {@code oneOf} appears both here and in the request body.
- */
 @Schema(name = "PaymentInstrumentResource", description = "doc.schema.PaymentInstrumentResource.description")
 public record PaymentInstrumentResource(
 
