@@ -18,24 +18,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Visits the nodes of an OpenAPI document — schemas and examples — exactly once each.
- *
- * <p>Any customizer that rewrites schemas needs this, and getting it slightly wrong is the usual
- * reason a rewrite appears to work: iterating {@code components.schemas} alone misses every inline
- * schema in a parameter, request body, response or header, so the change lands on the named types
- * and silently skips the places they are used.
- *
- * <p>Traversal is guarded by an identity set rather than equality. Composed schemas share sub-schema
- * instances, so an equality-based guard would skip distinct nodes that merely look alike, and an
- * unguarded walk would not terminate on a self-referential type.
- */
 public final class DocumentGraph {
 
     private DocumentGraph() {
     }
 
-    /** Applies {@code visitor} to every schema in the document, including inline ones. */
     @SuppressWarnings("rawtypes")
     public static void forEachSchema(OpenAPI openApi, Consumer<Schema> visitor) {
         Set<Schema> visited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -64,14 +51,6 @@ public final class DocumentGraph {
         }
     }
 
-
-    /**
-     * Applies {@code visitor} to every named example in the document.
-     *
-     * <p>Needed because springdoc resolves message keys for operation, parameter, response and
-     * schema prose but not for {@code @ExampleObject}: an example's summary and description reach
-     * the document exactly as written. Without this pass they are the one place a key leaks through.
-     */
     public static void forEachExample(OpenAPI openApi, Consumer<Example> visitor) {
         if (openApi.getComponents() != null) {
             if (openApi.getComponents().getExamples() != null) {
@@ -235,7 +214,7 @@ public final class DocumentGraph {
             Map<String, Schema> schemas, Consumer<Schema> visitor, Set<Schema> visited) {
 
         if (schemas != null) {
-            // Copied because a visitor may add or remove component schemas while walking.
+
             List.copyOf(schemas.values()).forEach(schema -> visit(schema, visitor, visited));
         }
     }

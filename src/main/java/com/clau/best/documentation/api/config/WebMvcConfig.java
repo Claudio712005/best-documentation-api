@@ -10,9 +10,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Makes the outcome of locale negotiation visible on the wire.
- */
 @Configuration(proxyBeanMethods = false)
 public class WebMvcConfig implements WebMvcConfigurer {
 
@@ -21,16 +18,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(new NegotiatedLanguageInterceptor());
     }
 
-    /**
-     * Echoes {@code Content-Language} on every response.
-     *
-     * <p>Required by RFC 9110 whenever a representation is language-specific, and load-bearing in
-     * practice: without it a shared cache cannot tell a Portuguese response from an English one at
-     * the same URL, and a client has no way to notice that the language it asked for was not served.
-     *
-     * <p>Set in {@code preHandle} rather than {@code postHandle} because the locale is resolved
-     * before the handler runs and the response may already be committed afterwards.
-     */
     static class NegotiatedLanguageInterceptor implements HandlerInterceptor {
 
         @Override

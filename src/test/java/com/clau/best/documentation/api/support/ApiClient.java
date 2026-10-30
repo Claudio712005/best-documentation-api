@@ -9,15 +9,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-/**
- * Minimal HTTP client for end-to-end tests.
- *
- * <p>Real requests over the loopback interface rather than {@code MockMvc}, because several of the
- * behaviours under test live outside the handler: locale negotiation happens in a
- * {@code LocaleResolver}, {@code Content-Language} is written by an interceptor, and the error
- * payload is produced by an exception handler and serialized by the configured message converters.
- * A test that short-circuits the servlet stack verifies the controller and misses all of it.
- */
 public final class ApiClient {
 
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
@@ -59,7 +50,6 @@ public final class ApiClient {
         }
     }
 
-    /** One response, with the body parsed lazily so a non-JSON failure still reports its text. */
     public record Response(int status, HttpResponse<String> raw, String body) {
 
         public JsonNode json() {

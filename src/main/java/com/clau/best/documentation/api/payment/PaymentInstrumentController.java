@@ -27,13 +27,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Registration and retrieval of payment instruments.
- *
- * <p>The reason this resource exists in a documentation showcase: its request body is a
- * discriminated union of four variants with genuinely different shapes, which is where generated
- * documentation most often goes wrong.
- */
 @RestController
 @RequestMapping(path = "/v1/payment-instruments", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = OpenApiConfig.TAG_PAYMENT_INSTRUMENTS)
@@ -48,14 +41,6 @@ public class PaymentInstrumentController {
         this.store = store;
     }
 
-    /**
-     * Registers an instrument of any of the four variants.
-     *
-     * <p>Named request examples carry most of the weight here. A {@code oneOf} tells a reader the
-     * shapes that are accepted but not what a valid payload looks like, and a documentation UI
-     * renders one arbitrary variant by default. Four named examples let a reader switch between
-     * them, and each one is a payload they can send unmodified.
-     */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             operationId = "registerPaymentInstrument",
@@ -127,8 +112,7 @@ public class PaymentInstrumentController {
             @Valid @RequestBody PaymentInstrument instrument) {
 
         PaymentInstrumentResource registered = store.register(instrument);
-        // Location is part of the contract for a creation, and the one piece of it that a
-        // generated document cannot infer.
+
         return ResponseEntity
                 .created(UriComponentsBuilder.fromPath("/v1/payment-instruments/{id}")
                         .buildAndExpand(registered.id())

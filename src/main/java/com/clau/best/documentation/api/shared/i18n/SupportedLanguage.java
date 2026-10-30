@@ -7,12 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * Languages this API is able to negotiate through the {@code Accept-Language} header.
- *
- * <p>Kept as a closed enum on purpose: the set of supported languages is part of the public
- * contract, so it must appear in the OpenAPI document instead of being an open-ended string.
- */
 @Schema(
         name = "SupportedLanguage",
         description = "doc.schema.SupportedLanguage.description",
@@ -20,16 +14,12 @@ import java.util.Optional;
         enumAsRef = true)
 public enum SupportedLanguage {
 
-    /** English (United States) — the fallback language of the API. */
     EN_US(Locale.of("en", "US")),
 
-    /** Brazilian Portuguese. */
     PT_BR(Locale.of("pt", "BR")),
 
-    /** European Spanish. */
     ES_ES(Locale.of("es", "ES"));
 
-    /** Language used whenever the client sends no acceptable {@code Accept-Language}. */
     public static final SupportedLanguage DEFAULT = EN_US;
 
     private final Locale locale;
@@ -42,7 +32,6 @@ public enum SupportedLanguage {
         return locale;
     }
 
-    /** BCP 47 tag, e.g. {@code pt-BR}. This is the wire format used in payloads and headers. */
     public String tag() {
         return locale.toLanguageTag();
     }
@@ -51,7 +40,6 @@ public enum SupportedLanguage {
         return Arrays.stream(values()).map(SupportedLanguage::locale).toList();
     }
 
-    /** Resolves a BCP 47 tag case-insensitively; empty when the language is not supported. */
     public static Optional<SupportedLanguage> fromTag(String tag) {
         if (tag == null || tag.isBlank()) {
             return Optional.empty();
@@ -62,7 +50,6 @@ public enum SupportedLanguage {
                 .findFirst();
     }
 
-    /** Maps any locale onto the closest supported language, falling back to {@link #DEFAULT}. */
     public static SupportedLanguage closestTo(Locale locale) {
         if (locale == null) {
             return DEFAULT;

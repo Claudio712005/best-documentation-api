@@ -12,18 +12,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * The failure responses every operation in this API can produce.
- *
- * <p>Collected into one meta-annotation for two reasons. The obvious one is volume: six responses
- * repeated across every operation is hundreds of lines that no reviewer will read. The subtler one
- * is honesty — once declaring an error costs nothing, operations stop quietly omitting the ones
- * they actually return, which is the most common lie in a generated document.
- *
- * <p>Status-specific responses such as {@code 404} and {@code 409} are intentionally left out: they
- * are declared per operation, since claiming an operation can answer {@code 404} when it addresses
- * no resource is just as misleading as omitting one that can.
- */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

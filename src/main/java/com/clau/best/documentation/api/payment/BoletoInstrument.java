@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.jspecify.annotations.Nullable;
 
-/** A bank slip payer registration. */
 @Schema(name = "BoletoInstrument", description = "doc.schema.BoletoInstrument.description")
 public final class BoletoInstrument extends PaymentInstrument {
 

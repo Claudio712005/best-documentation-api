@@ -10,13 +10,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.jspecify.annotations.Nullable;
 
-/**
- * A payment card.
- *
- * <p>The widest member of the union, and the one that shows why the discriminator matters: nothing
- * else in this family carries an expiry or a security code, so a client cannot validate the payload
- * without first knowing which variant it is reading.
- */
 @Schema(name = "CardInstrument", description = "doc.schema.CardInstrument.description")
 public final class CardInstrument extends PaymentInstrument {
 
@@ -47,16 +40,6 @@ public final class CardInstrument extends PaymentInstrument {
     @Max(2099)
     private final Integer expiryYear;
 
-    /**
-     * Write-only, declared with Jackson's {@code access} rather than {@code @Schema(writeOnly)}.
-     *
-     * <p>The distinction matters more than it looks. {@code @Schema(writeOnly = true)} only writes
-     * {@code writeOnly: true} into the document; Jackson keeps serializing the field, so the
-     * contract promises the value never comes back while the running service returns it on every
-     * response. {@code @JsonProperty(access = WRITE_ONLY)} drops it from serialization and springdoc
-     * reads the same annotation to emit {@code writeOnly: true} — one annotation, with the document
-     * and the behaviour unable to disagree.
-     */
     @Schema(
             description = "doc.schema.CardInstrument.securityCode",
             examples = "123",

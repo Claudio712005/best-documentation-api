@@ -13,17 +13,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Fetches the generated OpenAPI document over HTTP and keeps a copy on disk.
- *
- * <p>Deliberately goes through the real endpoint rather than invoking springdoc's services
- * directly: the locale is negotiated by an MVC {@code LocaleResolver} and the document is cached
- * per locale, so a test that bypasses the request pipeline would verify generation while proving
- * nothing about what clients actually receive.
- *
- * <p>Uses the JDK HTTP client so that nothing about this fixture depends on which test-support
- * abstractions a given Spring Boot generation happens to ship.
- */
 public final class OpenApiDocumentFixture {
 
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
@@ -32,12 +21,6 @@ public final class OpenApiDocumentFixture {
     private OpenApiDocumentFixture() {
     }
 
-    /**
-     * Requests {@code /v3/api-docs} in one language.
-     *
-     * @param languageTag value sent in {@code Accept-Language}
-     * @return the parsed document, also written to {@code target/openapi} for inspection
-     */
     public static JsonNode fetch(int port, String languageTag) {
         try {
             HttpResponse<String> response = HttpClient.newHttpClient().send(
@@ -64,15 +47,6 @@ public final class OpenApiDocumentFixture {
         }
     }
 
-    /**
-     * Collects every string in the document that still looks like an unresolved message key.
-     *
-     * <p>This is the one assertion that keeps the translations honest as the API grows: a key added
-     * to an annotation but forgotten in a bundle resolves to itself, which reads as a plausible
-     * value and would otherwise ship unnoticed.
-     *
-     * @return JSON Pointer paths of every value matching the message-key naming convention
-     */
     public static List<String> unresolvedMessageKeys(JsonNode document, String keyPrefix) {
         List<String> found = new ArrayList<>();
         collectUnresolved(document, "", keyPrefix, found);
