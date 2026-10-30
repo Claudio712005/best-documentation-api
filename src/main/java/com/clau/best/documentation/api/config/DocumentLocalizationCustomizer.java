@@ -1,19 +1,14 @@
 package com.clau.best.documentation.api.config;
 
+import com.clau.best.documentation.api.shared.openapi.DocumentGraph;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiLocaleCustomizer;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Translates the OpenAPI document into the language the client negotiated.
@@ -22,19 +17,20 @@ import java.util.Set;
  * those paths receive the request locale. Two things it does not cover, and this customizer does:
  *
  * <ol>
- *   <li><b>Component schemas.</b> The built-in resolver enabled by
+ *   <li><b>Schemas.</b> The built-in resolver enabled by
  *       {@code springdoc.api-docs.resolve-schema-properties} calls
  *       {@code resolveProperties(schema, Locale.getDefault())} — the JVM default locale, not the
  *       request locale — so it would freeze every schema description in the server's boot language.
- *       That flag is switched off in configuration and this class replaces it.
+ *       That flag is switched off in configuration and this class replaces it, walking inline
+ *       schemas as well as the named ones.
  *   <li><b>The programmatic {@code OpenAPI} bean.</b> Key resolution applies to annotation values,
  *       so {@code info} and tag prose built in {@link OpenApiConfig} would never be translated.
  * </ol>
  *
  * <p>Implemented as an {@link OpenApiLocaleCustomizer} rather than a plain {@code OpenApiCustomizer}
- * because only this interface is handed the selected locale; reaching for the current thread's
- * locale instead would read whichever locale the servlet request carried, which is not necessarily
- * the one springdoc settled on after applying {@code springdoc.allowed-locales}.
+ * because only this interface is handed the locale springdoc settled on after applying
+ * {@code springdoc.allowed-locales}. Reading the current thread's locale instead would see whatever
+ * the servlet request carried, which is not necessarily the same value.
  *
  * <p>Mutating the document in place is safe: {@code OpenAPIService#build(Locale)} deep-copies the
  * {@code OpenAPI} bean through JSON for every build, and each locale is cached separately, so one
@@ -57,7 +53,18 @@ public class DocumentLocalizationCustomizer implements OpenApiLocaleCustomizer {
     public void customise(OpenAPI openApi, Locale locale) {
         localizeInfo(openApi, locale);
         localizeTags(openApi.getTags(), locale);
-        localizeSchemas(openApi, locale);
+
+        DocumentGraph.forEachSchema(openApi, schema -> {
+            schema.setTitle(resolve(schema.getTitle(), locale));
+            schema.setDescription(resolve(schema.getDescription(), locale));
+        });
+
+        // springdoc does not resolve keys inside @ExampleObject, so an example's summary and
+        // description reach the document verbatim. Left alone, these are the only keys that leak.
+        DocumentGraph.forEachExample(openApi, example -> {
+            example.setSummary(resolve(example.getSummary(), locale));
+            example.setDescription(resolve(example.getDescription(), locale));
+        });
     }
 
     private void localizeInfo(OpenAPI openApi, Locale locale) {
@@ -72,8 +79,8 @@ public class DocumentLocalizationCustomizer implements OpenApiLocaleCustomizer {
     /**
      * Fills in tag descriptions from the tag name.
      *
-     * <p>{@link OpenApiConfig} declares names only, so the key is derived rather than repeated —
-     * a tag cannot end up pointing at another tag's description.
+     * <p>{@link OpenApiConfig} declares names only, so the key is derived rather than repeated — a
+     * tag cannot end up pointing at another tag's description.
      */
     private void localizeTags(List<Tag> tags, Locale locale) {
         if (tags == null) {
@@ -81,61 +88,6 @@ public class DocumentLocalizationCustomizer implements OpenApiLocaleCustomizer {
         }
         tags.forEach(tag -> tag.setDescription(
                 resolve(TAG_DESCRIPTION_KEY.formatted(tag.getName()), locale)));
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void localizeSchemas(OpenAPI openApi, Locale locale) {
-        if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
-            return;
-        }
-        Set<Schema> visited = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        openApi.getComponents().getSchemas().values()
-                .forEach(schema -> localizeSchema(schema, locale, visited));
-    }
-
-    /**
-     * Resolves every human-readable member of a schema, then recurses.
-     *
-     * <p>Traversal is guarded by an identity set: composed schemas share sub-schema instances, and a
-     * self-referential type — a category with child categories, say — would otherwise not terminate.
-     */
-    @SuppressWarnings("rawtypes")
-    private void localizeSchema(Schema schema, Locale locale, Set<Schema> visited) {
-        if (schema == null || !visited.add(schema)) {
-            return;
-        }
-
-        schema.setTitle(resolve(schema.getTitle(), locale));
-        schema.setDescription(resolve(schema.getDescription(), locale));
-
-        recurseInto(schema.getProperties(), locale, visited);
-        recurseInto(schema.getPatternProperties(), locale, visited);
-        localizeSchema(schema.getItems(), locale, visited);
-        localizeSchema(schema.getNot(), locale, visited);
-
-        if (schema.getAdditionalProperties() instanceof Schema additional) {
-            localizeSchema(additional, locale, visited);
-        }
-
-        recurseInto(schema.getAllOf(), locale, visited);
-        recurseInto(schema.getAnyOf(), locale, visited);
-        recurseInto(schema.getOneOf(), locale, visited);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void recurseInto(Map<String, Schema> properties, Locale locale, Set<Schema> visited) {
-        if (properties != null) {
-            properties.values().forEach(property -> localizeSchema(property, locale, visited));
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void recurseInto(
-            Collection<Schema> schemas, Locale locale, Set<Schema> visited) {
-
-        if (schemas != null) {
-            schemas.forEach(schema -> localizeSchema(schema, locale, visited));
-        }
     }
 
     /**
