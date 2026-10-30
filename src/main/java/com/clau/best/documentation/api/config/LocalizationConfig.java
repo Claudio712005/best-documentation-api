@@ -18,9 +18,9 @@ import java.nio.charset.StandardCharsets;
  *
  * <ol>
  *   <li><b>The OpenAPI document</b> — summaries, descriptions and tag names, resolved from
- *       {@code openapi-docs*.properties} (see {@link OpenApiConfig}).
+ *       {@code i18n/openapi*.properties} (see {@link OpenApiConfig}).
  *   <li><b>Runtime responses</b> — error titles, details and validation violations, resolved from
- *       {@code messages*.properties}.
+ *       {@code i18n/messages*.properties}.
  *   <li><b>Domain content</b> — product names and the like, which are data rather than copy and
  *       therefore live with the resources themselves, not in a bundle.
  * </ol>
@@ -46,7 +46,10 @@ public class LocalizationConfig {
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-        messageSource.setBasenames("classpath:i18n/messages", "classpath:i18n/validation");
+        messageSource.setBasenames(
+                "classpath:i18n/messages",
+                "classpath:i18n/validation",
+                "classpath:i18n/openapi");
         messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
         messageSource.setFallbackToSystemLocale(false);
         messageSource.setDefaultLocale(SupportedLanguage.DEFAULT.locale());
