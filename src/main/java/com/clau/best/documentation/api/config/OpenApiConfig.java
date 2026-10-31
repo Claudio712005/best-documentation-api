@@ -21,10 +21,11 @@ public class OpenApiConfig {
     public static final String TAG_CATALOG = "catalog";
     public static final String TAG_CARTS = "carts";
     public static final String TAG_PAYMENT_INSTRUMENTS = "payment-instruments";
+    public static final String TAG_BOLETOS = "boletos";
     public static final String TAG_ORDERS = "orders";
 
     public static final List<String> TAG_ORDER = List.of(
-            TAG_SYSTEM, TAG_CATALOG, TAG_CARTS, TAG_PAYMENT_INSTRUMENTS, TAG_ORDERS);
+            TAG_SYSTEM, TAG_PAYMENT_INSTRUMENTS, TAG_BOLETOS);
 
     @Bean
     public OpenAPI openApi(ApiProperties api) {
