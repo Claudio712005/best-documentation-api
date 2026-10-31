@@ -70,6 +70,14 @@ springdoc:
     enabled: true
     path: /docs
     disable-swagger-default-url: true
+    urls-primary-name: English (en-US)
+    urls:
+      - name: English (en-US)
+        url: /v3/api-docs/language/en-US
+      - name: Português (pt-BR)
+        url: /v3/api-docs/language/pt-BR
+      - name: Español (es-ES)
+        url: /v3/api-docs/language/es-ES
     display-request-duration: true
     doc-expansion: none
     operations-sorter: alpha
