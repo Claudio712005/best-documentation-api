@@ -43,12 +43,24 @@ public class DiscriminatedUnionCustomizer implements GlobalOpenApiCustomizer {
             return;
         }
 
-        union.mapping().values().forEach(variantName -> {
-            Schema variant = schemas.get(variantName);
-            if (variant != null) {
-                flatten(variant, base, union.baseSchema());
-            }
-        });
+        List<String> absent = union.mapping().values().stream()
+                .distinct()
+                .filter(variantName -> !schemas.containsKey(variantName))
+                .sorted()
+                .toList();
+        if (!absent.isEmpty()) {
+            throw new IllegalStateException(
+                    ("Cannot publish %s as a discriminated union: springdoc did not register %s. "
+                            + "A subtype is only resolved when its base type appears as a real Java "
+                            + "type in a resolved signature; declaring the base behind "
+                            + "@Schema(implementation = ...) resolves it through a path that skips "
+                            + "subtype resolution. Remove that override and let the parameter or "
+                            + "return type be inferred.")
+                            .formatted(union.baseSchema(), String.join(", ", absent)));
+        }
+
+        union.mapping().values()
+                .forEach(variantName -> flatten(schemas.get(variantName), base, union.baseSchema()));
 
         rewriteReferences(openApi, union);
 
