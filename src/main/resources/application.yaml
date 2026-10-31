@@ -1,3 +1,92 @@
 spring:
   application:
     name: best-documentation-api
+
+  jackson:
+    default-property-inclusion: non_null
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: true
+
+  mvc:
+    contentnegotiation:
+      favor-parameter: false
+
+api:
+  title: Best Documentation API
+  version: 1.0.0
+  problem-base-uri: https://docs.best-documentation-api.dev/problems
+  documentation-uri: https://docs.best-documentation-api.dev
+  contact:
+    name: API Platform Team
+    email: api-platform@best-documentation-api.dev
+    url: https://docs.best-documentation-api.dev/support
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  servers:
+    - url: http://localhost:8080
+      description: Local development
+    - url: https://sandbox.best-documentation-api.dev
+      description: Sandbox — accepts test data, resets nightly
+    - url: https://api.best-documentation-api.dev
+      description: Production
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+    version: openapi-3-1
+    resolve-schema-properties: false
+    resolve-extensions-properties: true
+
+  allowed-locales:
+    - en-US
+    - pt-BR
+    - es-ES
+
+  pre-loading-enabled: true
+  pre-loading-locales:
+    - en-US
+    - pt-BR
+    - es-ES
+
+  auto-tag-classes: false
+  default-produces-media-type: application/json
+
+  disable-i18n: false
+
+  model-converters:
+    polymorphic-converter:
+      enabled: true
+      one-of-as-ref: true
+      one-of-ref-suffix: Variant
+    java-nullable-property-customizer:
+      enabled: true
+
+  swagger-ui:
+    enabled: true
+    path: /docs
+    disable-swagger-default-url: true
+    urls-primary-name: English (en-US)
+    urls:
+      - name: English (en-US)
+        url: /v3/api-docs/language/en-US
+      - name: Português (pt-BR)
+        url: /v3/api-docs/language/pt-BR
+      - name: Español (es-ES)
+        url: /v3/api-docs/language/es-ES
+    display-request-duration: true
+    doc-expansion: none
+    operations-sorter: alpha
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    persist-authorization: true
+    show-extensions: true
+    show-common-extensions: true
+
+logging:
+  level:
+    com.clau.best.documentation.api: DEBUG
