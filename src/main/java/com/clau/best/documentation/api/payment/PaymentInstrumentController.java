@@ -6,6 +6,8 @@ import com.clau.best.documentation.api.shared.doc.NotFoundResponse;
 import com.clau.best.documentation.api.shared.doc.RequestIdHeader;
 import com.clau.best.documentation.api.shared.doc.StandardErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,6 +48,9 @@ public class PaymentInstrumentController {
             operationId = "registerPaymentInstrument",
             summary = "doc.operation.payment.register.summary",
             description = "doc.operation.payment.register.description",
+            extensions = @Extension(
+                    name = "x-captures",
+                    properties = @ExtensionProperty(name = "instrumentId", value = "$.id")),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     description = "doc.request.payment.register",
@@ -124,7 +129,10 @@ public class PaymentInstrumentController {
     @Operation(
             operationId = "getPaymentInstrument",
             summary = "doc.operation.payment.get.summary",
-            description = "doc.operation.payment.get.description")
+            description = "doc.operation.payment.get.description",
+            extensions = @Extension(
+                    name = "x-fills",
+                    properties = @ExtensionProperty(name = "instrumentId", value = "instrumentId")))
     @ApiResponse(
             responseCode = "200",
             description = "doc.response.payment.get.200",
