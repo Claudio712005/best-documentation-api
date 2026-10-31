@@ -11,7 +11,9 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class OpenApiDocumentFixture {
 
@@ -70,6 +72,38 @@ public final class OpenApiDocumentFixture {
         if (node.isArray()) {
             for (int index = 0; index < node.size(); index++) {
                 collectUnresolved(node.get(index), pointer + "/" + index, keyPrefix, found);
+            }
+        }
+    }
+
+    public static List<String> danglingReferences(JsonNode document) {
+        Set<String> defined = new HashSet<>();
+        JsonNode schemas = document.path("components").path("schemas");
+        schemas.properties().forEach(entry -> defined.add("#/components/schemas/" + entry.getKey()));
+
+        List<String> dangling = new ArrayList<>();
+        collectReferences(document, "", defined, dangling);
+        return dangling;
+    }
+
+    private static void collectReferences(
+            JsonNode node, String pointer, Set<String> defined, List<String> dangling) {
+
+        if (node.isObject()) {
+            JsonNode reference = node.path("$ref");
+            if (reference.isString()
+                    && reference.stringValue().startsWith("#/components/schemas/")
+                    && !defined.contains(reference.stringValue())) {
+
+                dangling.add(pointer + " -> " + reference.stringValue());
+            }
+            node.properties().forEach(entry ->
+                    collectReferences(entry.getValue(), pointer + "/" + entry.getKey(), defined, dangling));
+            return;
+        }
+        if (node.isArray()) {
+            for (int index = 0; index < node.size(); index++) {
+                collectReferences(node.get(index), pointer + "/" + index, defined, dangling);
             }
         }
     }

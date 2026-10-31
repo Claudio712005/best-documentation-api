@@ -95,6 +95,21 @@ class OpenApiContractTest {
                 .contains("200", "400", "406", "422", "500");
     }
 
+    @ParameterizedTest(name = "the {0} document resolves every reference")
+    @ValueSource(strings = {"en-US", "pt-BR", "es-ES"})
+    @DisplayName("leaves no dangling schema reference in any language")
+    void leavesNoDanglingReferences(String languageTag) {
+        List<String> dangling = OpenApiDocumentFixture.danglingReferences(
+                OpenApiDocumentFixture.fetch(port, languageTag));
+
+        assertThat(dangling)
+                .withFailMessage(
+                        "The %s document points at schemas that do not exist, which makes it "
+                                + "unusable by any generator or validator:%n  %s",
+                        languageTag, String.join("%n  ".formatted(), dangling))
+                .isEmpty();
+    }
+
     @Test
     @DisplayName("declares every tag explicitly instead of deriving them from class names")
     void declaresTagsExplicitly() {
