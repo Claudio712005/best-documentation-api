@@ -6,6 +6,8 @@ import com.clau.best.documentation.api.shared.doc.NotFoundResponse;
 import com.clau.best.documentation.api.shared.doc.RequestIdHeader;
 import com.clau.best.documentation.api.shared.doc.StandardErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -47,6 +49,9 @@ public class BoletoController {
             operationId = "issueBoleto",
             summary = "doc.operation.boleto.issue.summary",
             description = "doc.operation.boleto.issue.description",
+            extensions = @Extension(
+                    name = "x-captures",
+                    properties = @ExtensionProperty(name = "boletoId", value = "$.id")),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     description = "doc.request.boleto.issue",
@@ -204,7 +209,10 @@ public class BoletoController {
     @Operation(
             operationId = "getBoleto",
             summary = "doc.operation.boleto.get.summary",
-            description = "doc.operation.boleto.get.description")
+            description = "doc.operation.boleto.get.description",
+            extensions = @Extension(
+                    name = "x-fills",
+                    properties = @ExtensionProperty(name = "boletoId", value = "boletoId")))
     @ApiResponse(responseCode = "200", description = "doc.response.boleto.get.200")
     @NotFoundResponse
     public BoletoResponse get(

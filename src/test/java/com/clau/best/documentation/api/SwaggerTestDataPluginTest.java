@@ -10,7 +10,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class SwaggerTestDataPanelTest {
+class SwaggerTestDataPluginTest {
 
     private static final String INDEX = "/swagger-ui/index.html";
 
@@ -33,7 +33,7 @@ class SwaggerTestDataPanelTest {
         assertThat(response.body())
                 .contains("window.swaggerTestDataLabels")
                 .contains("generateAlphanumericCnpj")
-                .contains("swagger-test-data");
+                .contains("window.swaggerTestDataPlugin");
     }
 
     @Test
@@ -51,6 +51,9 @@ class SwaggerTestDataPanelTest {
                 .withFailMessage("springdoc no longer configures the UI, so the transformer broke it")
                 .contains("/v3/api-docs/swagger-config")
                 .contains("urls.primaryName");
+        assertThat(initializer)
+                .withFailMessage("the plugin is not registered, so no wrapped component renders")
+                .contains("SwaggerUIBundle.plugins.DownloadUrl, window.swaggerTestDataPlugin");
         assertThat(initializer).doesNotContain("petstore.swagger.io");
     }
 
@@ -60,6 +63,21 @@ class SwaggerTestDataPanelTest {
         assertThat(api.get(INDEX, "en-US").body()).contains("Test data");
         assertThat(api.get(INDEX, "pt-BR").body()).contains("Massa de teste");
         assertThat(api.get(INDEX, "es-ES").body()).contains("Datos de prueba");
+    }
+
+    @Test
+    @DisplayName("declares what each operation captures and fills")
+    void declaresTestFlowExtensions() {
+        var document = com.clau.best.documentation.api.support.OpenApiDocumentFixture.fetch(port, "en-US");
+
+        assertThat(document.path("paths").path("/v1/boletos").path("post")
+                .path("x-captures").path("boletoId").asString()).isEqualTo("$.id");
+        assertThat(document.path("paths").path("/v1/boletos/{boletoId}").path("get")
+                .path("x-fills").path("boletoId").asString()).isEqualTo("boletoId");
+        assertThat(document.path("paths").path("/v1/payment-instruments").path("post")
+                .path("x-captures").path("instrumentId").asString()).isEqualTo("$.id");
+        assertThat(document.path("paths").path("/v1/payment-instruments/{instrumentId}").path("get")
+                .path("x-fills").path("instrumentId").asString()).isEqualTo("instrumentId");
     }
 
     @Test

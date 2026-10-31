@@ -26,7 +26,11 @@ import java.util.Map;
 public class SwaggerTestDataTransformer extends SwaggerIndexPageTransformer {
 
     private static final String INDEX_PAGE = "index.html";
-    private static final String PANEL_SCRIPT = "/swagger-ui/test-data-panel.js";
+    private static final String PLUGIN_SCRIPT = "/swagger-ui/test-data-plugin.js";
+    private static final String INITIALIZER = "swagger-initializer.js";
+    private static final String DEFAULT_PLUGINS = "SwaggerUIBundle.plugins.DownloadUrl";
+    private static final String REGISTERED_PLUGINS =
+            DEFAULT_PLUGINS + ", window.swaggerTestDataPlugin";
     private static final String BODY_CLOSE = "</body>";
     private static final String LABEL_PREFIX = "ui.testdata.";
 
@@ -43,7 +47,7 @@ public class SwaggerTestDataTransformer extends SwaggerIndexPageTransformer {
             "selfTestFailed");
 
     private final MessageSource messageSource;
-    private final String panelScript;
+    private final String pluginScript;
 
     public SwaggerTestDataTransformer(
             SwaggerUiConfigProperties swaggerUiConfig,
@@ -54,7 +58,7 @@ public class SwaggerTestDataTransformer extends SwaggerIndexPageTransformer {
 
         super(swaggerUiConfig, swaggerUiOAuthProperties, swaggerWelcomeCommon, objectMapperProvider);
         this.messageSource = messageSource;
-        this.panelScript = readPanelScript();
+        this.pluginScript = readPluginScript();
     }
 
     @Override
@@ -63,23 +67,41 @@ public class SwaggerTestDataTransformer extends SwaggerIndexPageTransformer {
             throws IOException {
 
         Resource transformed = super.transform(request, resource, chain);
-        if (!INDEX_PAGE.equals(resource.getFilename())) {
-            return transformed;
-        }
+        String filename = resource.getFilename();
 
-        String html = read(transformed);
+        if (INDEX_PAGE.equals(filename)) {
+            return withPluginScript(resource, read(transformed), request);
+        }
+        if (INITIALIZER.equals(filename)) {
+            return withRegisteredPlugin(resource, read(transformed));
+        }
+        return transformed;
+    }
+
+    private Resource withPluginScript(Resource resource, String html, HttpServletRequest request) {
         if (!html.contains(BODY_CLOSE)) {
-            return transformed;
+            return new TransformedResource(resource, html.getBytes(StandardCharsets.UTF_8));
         }
-
         String injection = """
                 <script>window.swaggerTestDataLabels=%s;</script>
                 <script>%s</script>
-                """.formatted(labelsAsJson(RequestContextUtils.getLocale(request)), panelScript);
+                """.formatted(labelsAsJson(RequestContextUtils.getLocale(request)), pluginScript);
 
         return new TransformedResource(
                 resource,
                 html.replace(BODY_CLOSE, injection + BODY_CLOSE).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private Resource withRegisteredPlugin(Resource resource, String initializer) {
+        if (!initializer.contains(DEFAULT_PLUGINS)) {
+            throw new IllegalStateException(
+                    "Could not register the test data plugin: swagger-initializer.js no longer "
+                            + "contains \"" + DEFAULT_PLUGINS + "\", so the plugins array moved and the "
+                            + "wrapped components would silently stop rendering.");
+        }
+        return new TransformedResource(
+                resource,
+                initializer.replace(DEFAULT_PLUGINS, REGISTERED_PLUGINS).getBytes(StandardCharsets.UTF_8));
     }
 
     private String labelsAsJson(Locale locale) {
@@ -99,10 +121,10 @@ public class SwaggerTestDataTransformer extends SwaggerIndexPageTransformer {
         }
     }
 
-    private static String readPanelScript() throws IOException {
-        try (InputStream stream = SwaggerTestDataTransformer.class.getResourceAsStream(PANEL_SCRIPT)) {
+    private static String readPluginScript() throws IOException {
+        try (InputStream stream = SwaggerTestDataTransformer.class.getResourceAsStream(PLUGIN_SCRIPT)) {
             if (stream == null) {
-                throw new IllegalStateException("Missing classpath resource " + PANEL_SCRIPT);
+                throw new IllegalStateException("Missing classpath resource " + PLUGIN_SCRIPT);
             }
             return StreamUtils.copyToString(stream, StandardCharsets.UTF_8);
         }
